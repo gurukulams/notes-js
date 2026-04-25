@@ -21,10 +21,15 @@
     "@playwright/test": "^1.59.1",
     "@rollup/plugin-commonjs": "^29.0.2",
     "@rollup/plugin-node-resolve": "^15.3.1",
+    "@rollup/plugin-replace": "^6.0.3",
     "browser-sync": "^3.0.4",
     "copyfiles": "^2.4.1",
     "npm-run-all": "^4.1.5",
     "onchange": "^7.1.0",
-    "rollup": "^4.0.0"
+    "rollup": "^4.0.0",
+    "rollup-plugin-import-css": "^4.2.1"
+  },
+  "dependencies": {
+    "@recogito/text-annotator": "^3.4.9"
   }
 }
