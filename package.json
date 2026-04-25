@@ -1,0 +1,30 @@
+{
+  "name": "notes-js",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/notes.bundle.js",
+  "module": "dist/notes.esm.js",
+  "exports": {
+    "import": "./dist/notes.esm.js",
+    "require": "./dist/notes.bundle.js"
+  },
+  "scripts": {
+    "build:rollup": "rollup -c",
+    "sync": "copyfiles -u 1 \"public/**/*\" dist",
+    "build": "npm-run-all sync build:rollup",
+    "watch:rollup": "rollup -c -w",
+    "watch:public": "onchange \"public/**/*\" -- npm run sync",
+    "watch:site": "browser-sync start --server \"dist\" --files \"dist/**/*\" --no-notify",
+    "watch": "npm-run-all sync build:rollup --parallel watch:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-node-resolve": "^15.3.1",
+    "browser-sync": "^3.0.4",
+    "copyfiles": "^2.4.1",
+    "npm-run-all": "^4.1.5",
+    "onchange": "^7.1.0",
+    "rollup": "^4.0.0"
+  }
+}
