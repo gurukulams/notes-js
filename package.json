@@ -30,6 +30,7 @@
     "rollup-plugin-import-css": "^4.2.1"
   },
   "dependencies": {
+    "@recogito/annotorious": "^2.7.14",
     "@recogito/text-annotator": "^3.4.9"
   }
 }
