@@ -4647,6 +4647,7 @@ class NotesMaker {
         // Load annotations from a file
         // anno.loadAnnotations('annotations.json');
 
+        
         // Listen to user events
         anno.on('createAnnotation', annotation => {
             console.log('new annotation', annotation);

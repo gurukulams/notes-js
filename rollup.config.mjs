@@ -1,7 +1,8 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
-import css from 'rollup-plugin-import-css';
+
 import replace from '@rollup/plugin-replace';
+import postcss from 'rollup-plugin-postcss';
 
 export default {
   input: 'src/notes.js',
@@ -24,7 +25,11 @@ export default {
       preventAssignment: true,
       'process.env.NODE_ENV': JSON.stringify('production')
     }),
-    css(),
+     postcss({
+      extract: true,   // 👈 IMPORTANT
+      minimize: true
+    }),
+
     resolve({
       browser: true,
       preferBuiltins: false
