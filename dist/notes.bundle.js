@@ -4616,6 +4616,94 @@
      };
    };
 
+   // TextAnnotation.js
+
+
+
+   class TextAnnotation {
+     constructor(_contentRoot) {
+       this.contentRoot = _contentRoot;
+
+       this.anno = null;
+
+       this.annotatingEnabled = true;
+
+       this.init();
+     }
+
+     init() {
+       this.initAnnotator();
+     }
+
+     initAnnotator() {
+       if (this.anno) {
+         this.anno.destroy();
+         this.anno = null;
+       }
+
+       this.anno = Kt$1(this.contentRoot);
+
+       this.loadAnnotations();
+
+       this.setAnnotatingEnabled(this.annotatingEnabled);
+
+       this.anno.on("createAnnotation", () => this.saveAnnotations());
+
+       this.anno.on("updateAnnotation", () => this.saveAnnotations());
+
+       this.anno.on("deleteAnnotation", () => this.saveAnnotations());
+     }
+
+     storageKey() {
+       return `text-annotations:${window.location.pathname}`;
+     }
+
+     saveAnnotations() {
+       if (!this.anno) return;
+
+       localStorage.setItem(
+         this.storageKey(),
+         JSON.stringify(this.anno.getAnnotations())
+       );
+     }
+
+     loadAnnotations() {
+       if (!this.anno) return;
+
+       const saved = localStorage.getItem(this.storageKey());
+
+       if (!saved) return;
+
+       try {
+         this.anno.setAnnotations(JSON.parse(saved));
+       } catch (e) {
+         console.warn("Invalid saved annotations", e);
+       }
+     }
+
+     setAnnotatingEnabled(_editable) {
+       this.annotatingEnabled = _editable;
+
+       if (!this.anno) return;
+
+       // enable/disable creating annotations
+       this.anno.setAnnotatingEnabled(_editable);
+
+       // optional hard readonly
+       if (!_editable && this.anno.setUserSelectAction) {
+         this.anno.setUserSelectAction("NONE");
+       } else if (this.anno.setUserSelectAction) {
+         this.anno.setUserSelectAction("EDIT");
+       }
+     }
+
+     destroy() {
+       if (this.anno) {
+         this.anno.destroy();
+       }
+     }
+   }
+
    var ko = Object.defineProperty;
    var Mo = (e, t, n) => t in e ? ko(e, t, { enumerable: true, configurable: true, writable: true, value: n }) : e[t] = n;
    var It = (e, t, n) => Mo(e, typeof t != "symbol" ? t + "" : t, n);
@@ -11273,6 +11361,8 @@
        this.currentMode = 'rectangle';
        this.currentImageKey = null;
        this.pendingImageSrc = null;
+       this.selectedAnnotation = null;
+       this.annotatingEnabled = false;
 
        this.init();
      }
@@ -11282,6 +11372,41 @@
        this.bindFigures();
      }
 
+     setAnnotatingEnabled(_editable) {
+
+       this.annotatingEnabled = _editable;
+     
+       if (this.anno) {
+         this.anno.setDrawingEnabled(_editable);
+     
+         if (_editable) {
+           this.anno.setDrawingTool(
+             this.currentMode
+           );
+         }
+       }
+     
+       const rectBtn =
+         document.getElementById(
+           'anno-rect-btn'
+         );
+     
+       const polyBtn =
+         document.getElementById(
+           'anno-poly-btn'
+         );
+     
+       const deleteBtn =
+         document.getElementById(
+           'anno-delete-btn'
+         );
+     
+       rectBtn.disabled = !_editable;
+       polyBtn.disabled = !_editable;
+     
+       deleteBtn.disabled =
+         !_editable || !this.selectedAnnotation;
+     }
      bindFigures() {
        this.contentRoot.querySelectorAll('figure').forEach(figure => {
 
@@ -11289,7 +11414,7 @@
            const img = figure.querySelector('img');
            if (!img) return;
 
-           this.openImage(img);
+           this.openImage(img, figure);
          });
 
        });
@@ -11304,25 +11429,31 @@
        document.body.insertAdjacentHTML(
          'beforeend',
          `
-      <div class="offcanvas offcanvas-start"
+      <div class="offcanvas offcanvas-end"
            tabindex="-1"
            id="imageAnnotationCanvas"
-           style="width:90vw">
+           style="width:100vw">
 
         <div class="offcanvas-header border-bottom">
-          <h5 class="mb-0">
+          <h5 id="annotation-title" class="mb-0">
              Image Annotation
           </h5>
 
           <div class="btn-group ms-auto me-3">
             <button id="anno-rect-btn"
                     class="btn btn-outline-primary active">
-               Rectangle
+              Rectangle
             </button>
 
             <button id="anno-poly-btn"
                     class="btn btn-outline-primary">
-               Polygon
+              Polygon
+            </button>
+
+            <button id="anno-delete-btn"
+                    class="btn btn-outline-danger"
+                    disabled>
+              Delete
             </button>
           </div>
 
@@ -11375,15 +11506,31 @@
            'click',
            () => this.setMode('polygon')
          );
+
+         document
+         .getElementById('anno-delete-btn')
+         .addEventListener(
+           'click',
+           () => this.deleteSelected()
+         );
      }
 
-     openImage(img) {
+     openImage(img, figure) {
 
        this.currentImageKey =
-         this.relativePath(img.src);
+       this.relativePath(img.src);
+     
+       this.pendingImageSrc = img.src;
 
-       this.pendingImageSrc =
-         img.src;
+       const caption =
+         figure.querySelector('figcaption');
+
+       document.getElementById(
+       'annotation-title'
+       ).textContent =
+       caption
+         ? caption.textContent.trim()
+         : 'Image Annotation';
 
        this.bsCanvas.show();
      }
@@ -11405,6 +11552,10 @@
        );
      
        this.anno.setDrawingTool(this.currentMode);
+
+       this.setAnnotatingEnabled(
+         this.annotatingEnabled
+       );
      
        this.loadAnnotations();
      
@@ -11422,7 +11573,57 @@
          'deleteAnnotation',
          () => this.saveAnnotations()
        );
+
+       this.anno.on(
+         'selectionChanged',
+         selected => {
+        
+          if (selected?.length > 0) {
+        
+            this.selectedAnnotation =
+              selected[0];
+        
+            document
+              .getElementById(
+                 'anno-delete-btn'
+              ).disabled =
+                 !this.annotatingEnabled;
+        
+          } else {
+        
+            this.selectedAnnotation = null;
+        
+            document
+              .getElementById(
+                'anno-delete-btn'
+              ).disabled = true;
+          }
+        
+        });
+
      }
+
+     deleteSelected() {
+
+
+
+       if (!this.selectedAnnotation || !this.anno) {
+         return;
+       }
+     
+       this.anno.removeAnnotation(
+         this.selectedAnnotation.id
+       );
+     
+       this.selectedAnnotation = null;
+     
+       document
+         .getElementById('anno-delete-btn')
+         .disabled = true;
+     
+       this.saveAnnotations();
+     }
+
      setMode(mode) {
 
        this.currentMode = mode;
@@ -11503,28 +11704,17 @@
      constructor(_contentRoot, _notiFyFn) {
        console.log("Taking Notes");
 
-       this.anno = Kt$1(_contentRoot);
-
-       // Load annotations from a file
-       // anno.loadAnnotations('annotations.json');
-
-       // Listen to user events
-       this.anno.on("createAnnotation", (annotation) => {
-         console.log("new annotation", annotation);
-       });
-
+       this.textanno = new TextAnnotation(_contentRoot);
        this.imageAnno = new ImageAnnotation(_contentRoot);
 
        this.setEditable(false);
      }
 
      setEditable(_editable) {
-       this.anno.setAnnotatingEnabled(_editable);
+       this.textanno.setAnnotatingEnabled(_editable);
+       this.imageAnno.setAnnotatingEnabled(_editable);
      }
 
-     setTextNotesMode(_textNotesMode) {
-       console.log("Text Notes mode set to " + _textNotesMode);
-     }
    }
 
    return NotesMaker;

@@ -10,6 +10,8 @@ export default class ImageAnnotation {
     this.currentMode = 'rectangle';
     this.currentImageKey = null;
     this.pendingImageSrc = null;
+    this.selectedAnnotation = null;
+    this.annotatingEnabled = false;
 
     this.init();
   }
@@ -19,6 +21,41 @@ export default class ImageAnnotation {
     this.bindFigures();
   }
 
+  setAnnotatingEnabled(_editable) {
+
+    this.annotatingEnabled = _editable;
+  
+    if (this.anno) {
+      this.anno.setDrawingEnabled(_editable);
+  
+      if (_editable) {
+        this.anno.setDrawingTool(
+          this.currentMode
+        );
+      }
+    }
+  
+    const rectBtn =
+      document.getElementById(
+        'anno-rect-btn'
+      );
+  
+    const polyBtn =
+      document.getElementById(
+        'anno-poly-btn'
+      );
+  
+    const deleteBtn =
+      document.getElementById(
+        'anno-delete-btn'
+      );
+  
+    rectBtn.disabled = !_editable;
+    polyBtn.disabled = !_editable;
+  
+    deleteBtn.disabled =
+      !_editable || !this.selectedAnnotation;
+  }
   bindFigures() {
     this.contentRoot.querySelectorAll('figure').forEach(figure => {
 
@@ -26,7 +63,7 @@ export default class ImageAnnotation {
         const img = figure.querySelector('img');
         if (!img) return;
 
-        this.openImage(img);
+        this.openImage(img, figure);
       });
 
     });
@@ -41,25 +78,31 @@ export default class ImageAnnotation {
     document.body.insertAdjacentHTML(
       'beforeend',
       `
-      <div class="offcanvas offcanvas-start"
+      <div class="offcanvas offcanvas-end"
            tabindex="-1"
            id="imageAnnotationCanvas"
-           style="width:90vw">
+           style="width:100vw">
 
         <div class="offcanvas-header border-bottom">
-          <h5 class="mb-0">
+          <h5 id="annotation-title" class="mb-0">
              Image Annotation
           </h5>
 
           <div class="btn-group ms-auto me-3">
             <button id="anno-rect-btn"
                     class="btn btn-outline-primary active">
-               Rectangle
+              Rectangle
             </button>
 
             <button id="anno-poly-btn"
                     class="btn btn-outline-primary">
-               Polygon
+              Polygon
+            </button>
+
+            <button id="anno-delete-btn"
+                    class="btn btn-outline-danger"
+                    disabled>
+              Delete
             </button>
           </div>
 
@@ -112,15 +155,31 @@ export default class ImageAnnotation {
         'click',
         () => this.setMode('polygon')
       );
+
+      document
+      .getElementById('anno-delete-btn')
+      .addEventListener(
+        'click',
+        () => this.deleteSelected()
+      );
   }
 
-  openImage(img) {
+  openImage(img, figure) {
 
     this.currentImageKey =
-      this.relativePath(img.src);
+    this.relativePath(img.src);
+  
+    this.pendingImageSrc = img.src;
 
-    this.pendingImageSrc =
-      img.src;
+    const caption =
+      figure.querySelector('figcaption');
+
+    document.getElementById(
+    'annotation-title'
+    ).textContent =
+    caption
+      ? caption.textContent.trim()
+      : 'Image Annotation';
 
     this.bsCanvas.show();
   }
@@ -142,6 +201,10 @@ export default class ImageAnnotation {
     );
   
     this.anno.setDrawingTool(this.currentMode);
+
+    this.setAnnotatingEnabled(
+      this.annotatingEnabled
+    );
   
     this.loadAnnotations();
   
@@ -159,7 +222,57 @@ export default class ImageAnnotation {
       'deleteAnnotation',
       () => this.saveAnnotations()
     );
+
+    this.anno.on(
+      'selectionChanged',
+      selected => {
+     
+       if (selected?.length > 0) {
+     
+         this.selectedAnnotation =
+           selected[0];
+     
+         document
+           .getElementById(
+              'anno-delete-btn'
+           ).disabled =
+              !this.annotatingEnabled;
+     
+       } else {
+     
+         this.selectedAnnotation = null;
+     
+         document
+           .getElementById(
+             'anno-delete-btn'
+           ).disabled = true;
+       }
+     
+     });
+
   }
+
+  deleteSelected() {
+
+
+
+    if (!this.selectedAnnotation || !this.anno) {
+      return;
+    }
+  
+    this.anno.removeAnnotation(
+      this.selectedAnnotation.id
+    );
+  
+    this.selectedAnnotation = null;
+  
+    document
+      .getElementById('anno-delete-btn')
+      .disabled = true;
+  
+    this.saveAnnotations();
+  }
+
   setMode(mode) {
 
     this.currentMode = mode;
