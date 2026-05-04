@@ -5,6 +5,8 @@ import OpenSeadragon from 'openseadragon';
 import { createOSDAnnotator } from '@annotorious/openseadragon';
 import '@annotorious/openseadragon/annotorious-openseadragon.css';
 
+import { Offcanvas } from 'bootstrap';
+
 export default class ImageAnnotation {
 
   constructor(_contentRoot) {
@@ -147,7 +149,7 @@ export default class ImageAnnotation {
       );
 
     this.bsCanvas =
-      new bootstrap.Offcanvas(this.canvasEl);
+      new Offcanvas(this.canvasEl);
 
     // initialize only after offcanvas is visible
     this.canvasEl.addEventListener(

@@ -33,8 +33,10 @@
   "dependencies": {
     "@annotorious/annotorious": "^3.8.1",
     "@annotorious/openseadragon": "^3.8.1",
+    "@popperjs/core": "^2.11.8",
     "@recogito/annotorious": "^2.7.14",
     "@recogito/text-annotator": "^3.4.9",
+    "bootstrap": "^5.3.8",
     "openseadragon": "^6.0.2"
   }
 }
