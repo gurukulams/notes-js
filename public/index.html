@@ -207,12 +207,29 @@
       </div>
     </div>
 
+    <div class="offcanvas offcanvas-start w-100" tabindex="-1" id="offcanvasImageAnnotation" aria-labelledby="offcanvasDocsTreeLabel">
+      <div class="offcanvas-header">
+
+      </div>
+      <div class="offcanvas-body">
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="notes.bundle.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
+
+        // 1. Grab the raw HTML element from the DOM
+        const offcanvasEl = document.getElementById('offcanvasImageAnnotation');
+
+        // 2. Fetch the existing Bootstrap instance attached to it
+        const myOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
+
+        console.log("Offcanvas" + myOffcanvas)
+
         const content = document.querySelector("article");
-        const nm = new NotesMaker(content, (msg) => {
+        const nm = new NotesMaker(content, myOffcanvas, (msg) => {
           console.log("NotesMaker Notification:", msg);
         });
 

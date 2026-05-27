@@ -75285,7 +75285,7 @@ void main(void)\r
 
    class ImageAnnotation {
 
-     constructor(_contentRoot) {
+     constructor(_contentRoot, myOffcanvas) {
        this.contentRoot = _contentRoot;
 
        this.anno = null;
@@ -75297,11 +75297,11 @@ void main(void)\r
        this.viewerMode = 'standard';
        this.osdViewer = null;
 
-       this.init();
+       this.init(myOffcanvas);
      }
 
-     init() {
-       this.createOffcanvas();
+     init(myOffcanvas) {
+       this.createOffcanvas(myOffcanvas);
        this.bindFigures();
      }
 
@@ -75353,20 +75353,22 @@ void main(void)\r
        });
      }
 
-     createOffcanvas() {
+     /**
+    * Takes an empty Bootstrap Offcanvas instance and injects the annotation UI markup and logic
+    * @param {Object} emptyCanvasInstance - The empty Bootstrap Offcanvas object passed from the consumer
+    */
+   createOffcanvas(emptyCanvasInstance) {
+     // 1. Store the injected bootstrap instance
+     this.bsCanvas = emptyCanvasInstance;
+     this.canvasEl = this.bsCanvas._element;
 
-       if (document.getElementById('imageAnnotationCanvas')) {
+     if (!this.canvasEl) {
+         console.error("ImageAnnotation Error: The provided offcanvas instance is invalid.");
          return;
-       }
+     }
 
-       document.body.insertAdjacentHTML(
-         'beforeend',
-         `
-      <div class="offcanvas offcanvas-end border-0" 
-     tabindex="-1" 
-     id="imageAnnotationCanvas" 
-     style="width:100vw">
-     
+     // 2. Populate the empty container with the full functional DOM layout
+     this.canvasEl.innerHTML = `
     <div class="offcanvas-header border-bottom border-secondary">
         <h5 id="annotation-title" class="mb-0">
             Image Annotation
@@ -75395,9 +75397,7 @@ void main(void)\r
     </div>
 
     <div class="offcanvas-body p-0 position-relative overflow-hidden">
-        
         <div class="d-flex align-items-center justify-content-center w-100 h-100">
-            
             <img id="annotation-image" 
                  class="img-fluid" 
                  style="max-height: 100%; max-width: 100%; object-fit: contain; display: block;" />
@@ -75405,70 +75405,36 @@ void main(void)\r
             <div id="annotation-viewer" 
                  style="display:none; width:100%; height:100%; background: #000;">
             </div>
-            
         </div>
-
     </div>
-</div>
-      `
-       );
+  `;
 
-       this.canvasEl =
-         document.getElementById('imageAnnotationCanvas');
+     // 3. Match references strictly using querySelector inside our freshly filled canvas container
+     this.imageEl = this.canvasEl.querySelector('#annotation-image');
+     this.viewerEl = this.canvasEl.querySelector('#annotation-viewer');
 
-       this.imageEl =
-         document.getElementById('annotation-image');
-
-       this.viewerEl =
-         document.getElementById(
-           'annotation-viewer'
-         );
-
-       // ... rest of your code ...
-       this.bsCanvas = new bootstrap.Offcanvas(this.canvasEl);
-
-       // initialize only after offcanvas is visible
-       this.canvasEl.addEventListener(
-         'shown.bs.offcanvas',
-         () => {
-           if (this.pendingImageSrc) {
+     // 4. Hook up the execution triggers
+     this.canvasEl.addEventListener('shown.bs.offcanvas', () => {
+         if (this.pendingImageSrc) {
              this.imageEl.src = this.pendingImageSrc;
              this.initAnnotator();
              this.pendingImageSrc = null;
-           }
          }
-       );
+     });
 
-       document
-         .getElementById('anno-rect-btn')
-         .addEventListener(
-           'click',
-           () => this.setMode('rectangle')
-         );
+     // 5. Scope element listeners directly within this canvas context
+     this.canvasEl.querySelector('#anno-rect-btn')
+         .addEventListener('click', () => this.setMode('rectangle'));
 
-       document
-         .getElementById('anno-poly-btn')
-         .addEventListener(
-           'click',
-           () => this.setMode('polygon')
-         );
+     this.canvasEl.querySelector('#anno-poly-btn')
+         .addEventListener('click', () => this.setMode('polygon'));
 
-         document
-         .getElementById('anno-delete-btn')
-         .addEventListener(
-           'click',
-           () => this.deleteSelected()
-         );
+     this.canvasEl.querySelector('#anno-delete-btn')
+         .addEventListener('click', () => this.deleteSelected());
 
-         document
-         .getElementById('viewer-mode-select')
-         .addEventListener(
-           'change',
-           e => this.setViewerMode(
-               e.target.value
-           )
-         );
-     }
+     this.canvasEl.querySelector('#viewer-mode-select')
+         .addEventListener('change', e => this.setViewerMode(e.target.value));
+   }
 
      setViewerMode(mode) {
 
@@ -75703,11 +75669,11 @@ void main(void)\r
 
    class NotesMaker {
 
-     constructor(_contentRoot, _notiFyFn) {
+     constructor(_contentRoot, myOffcanvas, _notiFyFn) {
        console.log("Taking Notes");
 
        this.textanno = new TextAnnotation(_contentRoot);
-       this.imageAnno = new ImageAnnotation(_contentRoot);
+       this.imageAnno = new ImageAnnotation(_contentRoot, myOffcanvas);
 
        this.setEditable(false);
      }

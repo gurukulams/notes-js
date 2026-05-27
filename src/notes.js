@@ -6,11 +6,11 @@ import ImageAnnotation from './components/ImageAnnotation'
 
 export default class NotesMaker {
 
-  constructor(_contentRoot, _notiFyFn) {
+  constructor(_contentRoot, myOffcanvas, _notiFyFn) {
     console.log("Taking Notes");
 
     this.textanno = new TextAnnotation(_contentRoot)
-    this.imageAnno = new ImageAnnotation(_contentRoot)
+    this.imageAnno = new ImageAnnotation(_contentRoot, myOffcanvas)
 
     this.setEditable(false);
   }
